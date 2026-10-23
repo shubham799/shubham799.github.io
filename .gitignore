@@ -1,0 +1,17 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+
+# Local browser-testing output
+.playwright-mcp/
+
+# Fonts downloaded by scripts/make-og-image.py
+scripts/.font-cache/
