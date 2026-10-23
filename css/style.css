@@ -817,3 +817,17 @@ ul, ol { margin: 0; padding: 0; }
 
 /* The slow rotation is an SVG <animateTransform> added by main.js
    (skipped when the visitor prefers reduced motion). */
+
+/* Travelling pulses on the contour rings (added by main.js; skipped for
+   reduced motion). --from / --to are set per pulse. */
+.contour-pulse {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-width: 2.4;
+  animation: contour-flow 12s linear infinite;
+}
+
+@keyframes contour-flow {
+  from { stroke-dashoffset: var(--from); }
+  to   { stroke-dashoffset: var(--to); }
+}

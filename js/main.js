@@ -165,6 +165,18 @@
       accentEvery: 5,       // every Nth ring is green
       wobble: 0.16          // how irregular the rings are (0 = perfect circles)
     };
+
+    // Green "signals" that travel along some rings.
+    // ring: which ring (0 = innermost); seconds: time for one lap; reverse: run anticlockwise
+    var PULSES = [
+      { ring: 4,  seconds: 9,  reverse: false },
+      { ring: 7,  seconds: 14, reverse: true },
+      { ring: 9,  seconds: 12, reverse: false },
+      { ring: 13, seconds: 20, reverse: true },
+      { ring: 14, seconds: 16, reverse: false }
+    ];
+    // Each pulse is a short run of dashes (sizes in px)
+    var PULSE = { length: 40, dash: 7, gap: 5 };
     var SVG_NS = 'http://www.w3.org/2000/svg';
     var STEPS = 72; // points per ring
 
@@ -201,6 +213,12 @@
       var fade = 1 - i / CONTOUR.rings;
       path.setAttribute('opacity', ((isAccent ? 0.35 : 0.14) * (0.5 + 0.5 * fade)).toFixed(3));
       group.appendChild(path);
+
+      if (!reduceMotion) {
+        PULSES.forEach(function (pulse) {
+          if (pulse.ring === i) addPulse(group, path.getAttribute('d'), base, pulse);
+        });
+      }
     }
 
     // Very slow rotation around the rings' centre (one turn every 4 minutes)
@@ -217,6 +235,35 @@
 
     contourSvg.appendChild(group);
   }
+
+  // Adds one travelling pulse (a short run of dashes) on top of a ring.
+  // Paths use pathLength=1000, so all dash sizes are in thousandths of a lap.
+  function addPulse(parent, d, radius, pulse) {
+    var toUnits = 1000 / (2 * Math.PI * radius); // px -> lap units (approximate)
+
+    // Builds a dasharray of repeating dash/gap pairs filling `length`, then one gap for the rest of the lap
+    function pattern(spec) {
+      var dash = Math.max(spec.dash * toUnits, 0.01);
+      var gap = spec.gap * toUnits;
+      var count = Math.max(1, Math.floor((spec.length * toUnits) / (dash + gap)));
+      var parts = [];
+      for (var n = 0; n < count; n++) parts.push(dash.toFixed(2), gap.toFixed(2));
+      var used = count * (dash + gap);
+      parts[parts.length - 1] = (gap + (1000 - used)).toFixed(2); // last gap runs to the end of the lap
+      return { dasharray: parts.join(' '), length: used };
+    }
+
+    var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    el.setAttribute('d', d);
+    el.setAttribute('pathLength', '1000');
+    el.setAttribute('class', 'contour-pulse');
+    el.style.strokeDasharray = pattern(PULSE).dasharray;
+    el.style.setProperty('--from', '0');
+    el.style.setProperty('--to', pulse.reverse ? '1000' : '-1000');
+    el.style.animationDuration = pulse.seconds + 's';
+    parent.appendChild(el);
+  }
+
 
   // Turns a closed list of points into a smooth curve (Catmull-Rom to Bezier)
   function smoothClosedPath(pts) {
